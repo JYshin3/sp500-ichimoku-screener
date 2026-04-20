@@ -7,8 +7,6 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
-import requests
-from bs4 import BeautifulSoup
 import time
 import warnings
 from datetime import datetime
@@ -32,16 +30,12 @@ st.caption("주봉 기준 · 구름 상향 돌파 · 양봉 종가 · MA20/MA60 
 # ──────────────────────────────────────────
 @st.cache_data(ttl=3600)
 def get_sp500_tickers():
-    """Wikipedia에서 S&P 500 구성 종목 로드 (1시간 캐시)"""
+    """Wikipedia에서 S&P 500 구성 종목 로드 (pandas 방식, 1시간 캐시)"""
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
     try:
-        resp = requests.get(url, timeout=10)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        table = soup.find("table", {"id": "constituents"})
-        tickers = []
-        for row in table.findAll("tr")[1:]:
-            ticker = row.findAll("td")[0].text.strip().replace(".", "-")
-            tickers.append(ticker)
+        tables = pd.read_html(url, attrs={"id": "constituents"})
+        df = tables[0]
+        tickers = df["Symbol"].str.replace(".", "-", regex=False).tolist()
         return tickers
     except Exception as e:
         st.warning(f"티커 로드 실패, 샘플 목록 사용: {e}")
